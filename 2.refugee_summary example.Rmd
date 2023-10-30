@@ -1,0 +1,102 @@
+---
+title: "3. Using refugee_summary()"
+output: html_document
+---
+
+### Function Documentation 
+
+**Description** 
+
+The refugee_summary() function is used to quickly get summary from UNHCR Refugee Data Finder on the amount of external refugee displacement across time and destination country for a particular origin country (if specified) and divided between refugee and asylum-seeker flows to provide initial information on domestic refugee recognition context. 
+
+**Usage**
+
+refugee_summary(data, origin_country = NULL)
+
+**Arguments**
+
+_data_: A raw csv file extracted from the UNHCR Refugee Data Finder (available at: https://www.unhcr.org/refugee-statistics/download/?url=Faz4W1), which contains refugee and asylum seeker flows. Please note that the data should be opened with R's read.csv() and that the function will not work if the data frame column names and order has been altered 
+
+_origin_country_: If a string corresponding to an origin country name in the data frame is specified, the function will return displacement information for the specified origin country. If not specified (default), the function will return overall displacement information per destination counntry for all origin countries. 
+
+### Example
+
+The data frame used in the following example is taken from the UNHCR Data Finder for all origin and destination countries between 2017 and 2022. It is available for download on the GitHub repository under file '0. UNHCR data'
+
+```{r load dataset, message = FALSE}
+#Ensures that the results table are fully printed
+options(tibble.width = Inf)
+
+#Loading the dataset
+data <- read.csv('0. UNHCR data.csv')
+```
+
+```{r function code, echo=FALSE}
+refugee_summary <- function(data, origin_country = NULL) {
+  
+  #If tidyverse isn't installed, install it
+  if (!requireNamespace('tidyverse', quietly = TRUE)) {
+    install.packages('tidyverse')
+    library(tidyverse, quietly = TRUE)
+    
+    #Otherwise load tidyverse
+  } else {
+    library(tidyverse, quietly = TRUE)
+  }
+  
+  #If a year-country-pair has no external displacement, remove it
+  data <- data %>%
+    filter(!(Refugees.under.UNHCR.s.mandate == 0 & Asylum.seekers == 0))
+  
+  if (is.null(origin_country)) {
+    #Create a new dataset data_summarised
+    data_summarised <- data %>%
+      #Group according to the variables Year, Destination Country and Destination Code
+      group_by_at(vars(1, ncol(.) - 2, ncol(.) - 3)) %>%
+      #For each destination country per year, calculate the number of refugees
+      summarise(refugee_summed = sum(Refugees.under.UNHCR.s.mandate), 
+                #Of asylum seekers
+                asylum_seekers_summed = sum(Asylum.seekers),
+                #Of overall external displacement
+                external_displacement_total = sum(refugee_summed + asylum_seekers_summed))
+  }
+  
+  else {
+    #Create a new dataset data_summarised
+    data_summarised <- data %>%
+      #Filter by chosen destination country 
+      filter(data[, 2] == origin_country) %>% 
+      #Group according to the variables Year, Destination Country and Destination Code
+      group_by_at(vars(1, ncol(.) - 2, ncol(.) - 3)) %>%
+      #For each destination country per year, calculate the number of refugees
+      summarise(refugee_summed = sum(Refugees.under.UNHCR.s.mandate), 
+                #Of asylum seekers
+                asylum_seekers_summed = sum(Asylum.seekers),
+                #Of overall external displacement
+                external_displacement_total = sum(refugee_summed + asylum_seekers_summed))
+  }
+  
+  #Return the new dataset
+  return(data_summarised)
+}
+```
+
+
+1) If no origin country is specified, the function returns sums for all origin countries:
+```{r default, message = FALSE}
+overall_data <- refugee_summary(data)
+head(overall_data)
+```
+
+2) If an origin country (here Burundi) is explicitely specified, the function returns displacement information for that country
+```{r Burundi, message = FALSE}
+burundi_data <- refugee_summary(data, origin_country = 'Burundi')
+head(burundi_data)
+```
+
+3) It is not necessary to explicitely state that the second argument refers to the origin country, here the function returns displacement information for Afghanistan
+```{r Afghanistan, message = FALSE}
+afghanistan_data <- refugee_summary(data, 'Afghanistan')
+head(afghanistan_data)
+```
+
