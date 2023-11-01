@@ -8,4 +8,4 @@ Contains all files for Exercise 1 of Assignment 2
 
 2. refugee_summary example: contains function documentation and provides some examples on how to use refugee_summary on '0. UNHCR data'
 
-3. refugee_summary-example: knitted HTML file of 'refugee_summary example'
+3. refugee_summary-example: knitted HTML file of '2. refugee_summary example'
